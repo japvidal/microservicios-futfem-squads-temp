@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -67,7 +67,14 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
-	</dependencies>
+	
+
+\t\t<dependency>
+\t\t\t<groupId>com.h2database</groupId>
+\t\t\t<artifactId>h2</artifactId>
+\t\t\t<scope>test</scope>
+\t\t</dependency>
+</dependencies>
 
 	<build>
 		<plugins>
@@ -92,7 +99,13 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-		</dependencies>
+		
+
+
+</dependencies>
 	</dependencyManagement>
 </project>
+
+
+
 
