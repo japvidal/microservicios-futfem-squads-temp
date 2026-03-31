@@ -34,7 +34,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'chmod +x mvnw'
-                sh './mvnw -B clean package -DskipTests'
+                sh './mvnw -B clean install -DskipTests'
             }
         }
 
