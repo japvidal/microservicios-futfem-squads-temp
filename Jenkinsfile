@@ -81,7 +81,21 @@ pipeline {
                 expression { return params.BUILD_DOCKER && env.DOCKERFILE_PATH?.trim() }
             }
             steps {
-                sh "docker build -f ${env.DOCKERFILE_PATH} -t ${env.IMAGE_REF} ."
+                script {
+                    def registry = params.DOCKER_REGISTRY?.trim()
+                    if (!registry) {
+                        registry = 'ghcr.io/japvidal'
+                    }
+                    def appName = env.APP_NAME?.trim()
+                    if (!appName) {
+                        appName = sh(script: 'basename "$PWD"', returnStdout: true).trim()
+                    }
+                    def imageTag = (env.BRANCH_NAME ?: "build-${env.BUILD_NUMBER}").replaceAll('[^A-Za-z0-9_.-]', '-')
+                    env.IMAGE_TAG = imageTag
+                    env.IMAGE_REF = "${registry}/tikitakas/${appName}:${imageTag}"
+                    echo "IMAGE_REF=${env.IMAGE_REF}"
+                    sh "docker build -f ${env.DOCKERFILE_PATH} -t ${env.IMAGE_REF} ."
+                }
             }
         }
 
@@ -91,6 +105,19 @@ pipeline {
             }
             steps {
                 script {
+                    if (!env.IMAGE_REF?.trim()) {
+                        def registry = params.DOCKER_REGISTRY?.trim()
+                        if (!registry) {
+                            registry = 'ghcr.io/japvidal'
+                        }
+                        def appName = env.APP_NAME?.trim()
+                        if (!appName) {
+                            appName = sh(script: 'basename "$PWD"', returnStdout: true).trim()
+                        }
+                        def imageTag = (env.BRANCH_NAME ?: "build-${env.BUILD_NUMBER}").replaceAll('[^A-Za-z0-9_.-]', '-')
+                        env.IMAGE_TAG = imageTag
+                        env.IMAGE_REF = "${registry}/tikitakas/${appName}:${imageTag}"
+                    }
                     withCredentials([
                         usernamePassword(
                             credentialsId: params.DOCKER_CREDENTIALS_ID,
@@ -102,6 +129,8 @@ pipeline {
                             set +x
                             if [ -n "${DOCKER_REGISTRY}" ]; then
                               echo "${DOCKER_PASSWORD}" | docker login "${DOCKER_REGISTRY}" -u "${DOCKER_USERNAME}" --password-stdin
+                            else
+                              echo "${DOCKER_PASSWORD}" | docker login ghcr.io/japvidal -u "${DOCKER_USERNAME}" --password-stdin
                             fi
                             docker push "${IMAGE_REF}"
                         '''
