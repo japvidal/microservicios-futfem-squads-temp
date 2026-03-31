@@ -30,7 +30,10 @@ pipeline {
         stage('Detect Project') {
             steps {
                 script {
-                    def repoName = sh(script: 'basename "$PWD"', returnStdout: true).trim()
+                    def repoName = sh(
+                        script: "git config --get remote.origin.url | sed -E 's#.*/([^/]+?)(\\\\.git)?$#\\\\1#'",
+                        returnStdout: true
+                    ).trim()
                     env.IMAGE_NAME = "tikitakas/${repoName.replaceFirst('^microservicios-futfem-', '')}"
                     env.IMAGE_TAG = (env.BRANCH_NAME ?: "build-${env.BUILD_NUMBER}").replaceAll('[^A-Za-z0-9_.-]', '-')
                     env.IMAGE_REF = params.DOCKER_REGISTRY?.trim()
@@ -73,7 +76,10 @@ pipeline {
                     }
                     def imageName = env.IMAGE_NAME?.trim()
                     if (!imageName) {
-                        def repoName = sh(script: 'basename "$PWD"', returnStdout: true).trim()
+                        def repoName = sh(
+                            script: "git config --get remote.origin.url | sed -E 's#.*/([^/]+?)(\\\\.git)?$#\\\\1#'",
+                            returnStdout: true
+                        ).trim()
                         imageName = "tikitakas/${repoName.replaceFirst('^microservicios-futfem-', '')}"
                     }
                     def imageTag = (env.BRANCH_NAME ?: "build-${env.BUILD_NUMBER}").replaceAll('[^A-Za-z0-9_.-]', '-')
