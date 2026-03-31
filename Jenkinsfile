@@ -55,12 +55,14 @@ pipeline {
         stage('Detect Dockerfile') {
             steps {
                 script {
-                    def dockerCandidates = []
                     if (fileExists('Dockerfile')) {
-                        dockerCandidates << 'Dockerfile'
+                        env.DOCKERFILE_PATH = 'Dockerfile'
+                    } else {
+                        env.DOCKERFILE_PATH = sh(
+                            script: 'ls *.Dockerfile 2>/dev/null | head -n 1 || true',
+                            returnStdout: true
+                        ).trim()
                     }
-                    dockerCandidates.addAll(findFiles(glob: '*.Dockerfile').collect { it.path })
-                    env.DOCKERFILE_PATH = dockerCandidates ? dockerCandidates[0] : ''
                 }
             }
         }
