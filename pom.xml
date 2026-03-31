@@ -69,11 +69,11 @@
 		</dependency>
 	
 
-\t\t<dependency>
-\t\t\t<groupId>com.h2database</groupId>
-\t\t\t<artifactId>h2</artifactId>
-\t\t\t<scope>test</scope>
-\t\t</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
 </dependencies>
 
 	<build>
@@ -105,6 +105,7 @@
 </dependencies>
 	</dependencyManagement>
 </project>
+
 
 
 
