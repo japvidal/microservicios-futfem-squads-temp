@@ -1,28 +1,12 @@
-FROM openjdk:8-jdk-alpine
-EXPOSE 8090
+FROM eclipse-temurin:21-jre-alpine
+
 WORKDIR /app
 
-# Copy maven executable to the image
-COPY mvnw .
-COPY .mvn .mvn
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
 
-# Copy the pom.xml file
-COPY pom.xml .
+EXPOSE 8080
 
-# Copy the project source
-COPY ./src ./src
-COPY ./pom.xml ./pom.xml
-
-RUN chmod 755 /app/mvnw
-
-RUN ./mvnw dependency:go-offline -B
-
-RUN ./mvnw package
-#RUN ls -al
-ENTRYPOINT ["java","-jar","target/microservicios-futfem-squads-temp-0.0.1-SNAPSHOT.jar"]
-
-
-#ADD target/microservicios-futfem-squads-temp-0.0.1-SNAPSHOT.jar futfem_squads-temp.jar
-#ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/futfem_squads-temp.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
 
