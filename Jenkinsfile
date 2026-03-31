@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     def repoName = sh(
-                        script: "git config --get remote.origin.url | sed -E 's#.*/([^/]+?)(\\\\.git)?$#\\\\1#'",
+                        script: '''git config --get remote.origin.url | sed -E 's#.*/([^/]+?)(\\.git)?$#\\1#' ''',
                         returnStdout: true
                     ).trim()
                     env.IMAGE_NAME = "tikitakas/${repoName.replaceFirst('^microservicios-futfem-', '')}"
@@ -77,7 +77,7 @@ pipeline {
                     def imageName = env.IMAGE_NAME?.trim()
                     if (!imageName) {
                         def repoName = sh(
-                            script: "git config --get remote.origin.url | sed -E 's#.*/([^/]+?)(\\\\.git)?$#\\\\1#'",
+                            script: '''git config --get remote.origin.url | sed -E 's#.*/([^/]+?)(\\.git)?$#\\1#' ''',
                             returnStdout: true
                         ).trim()
                         imageName = "tikitakas/${repoName.replaceFirst('^microservicios-futfem-', '')}"
