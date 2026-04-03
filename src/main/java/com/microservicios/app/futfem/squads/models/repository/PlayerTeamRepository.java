@@ -1,6 +1,7 @@
 package com.microservicios.app.futfem.squads.models.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -14,4 +15,6 @@ public interface PlayerTeamRepository extends CrudRepository<PlayerTeam, Long> {
 	
 	@Query("select pt from PlayerTeam pt where pt.season = ?1 order by CAST(pt.dorsal AS int) asc ")  
 	public List<PlayerTeam> findBySeason(String season );
+
+	Optional<PlayerTeam> findByIdTeamAndIdPlayerAndSeason(Long idTeam, Long idPlayer, String season);
 }
