@@ -102,7 +102,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 
 	private ImportedRow buildImportedRow(Row row, Map<String, Integer> headers, DataFormatter formatter,
 			FormulaEvaluator evaluator) {
-		log.debug("Init method PlayerTeamServiceImpl.buildImportedRow");
+		log.info("Init method PlayerTeamServiceImpl.buildImportedRow");
 		String club = readCell(row, headers, formatter, evaluator, "club");
 		String dorsal = readCell(row, headers, formatter, evaluator, "dorsal");
 		String name = readCell(row, headers, formatter, evaluator, "nombre");
@@ -121,7 +121,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private PlayerResolution resolvePlayer(ImportedRow importedRow) {
-		log.debug("Init method PlayerTeamServiceImpl.resolvePlayer");
+		log.info("Init method PlayerTeamServiceImpl.resolvePlayer");
 		PlayerLookupRequest lookupRequest = new PlayerLookupRequest(importedRow.name(), importedRow.surname(),
 				importedRow.birthdate());
 		try {
@@ -156,7 +156,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private TeamResolution resolveTeam(ImportedRow importedRow) {
-		log.debug("Init method PlayerTeamServiceImpl.resolveTeam");
+		log.info("Init method PlayerTeamServiceImpl.resolveTeam");
 		TeamLookupRequest lookupRequest = new TeamLookupRequest(importedRow.club(), DEFAULT_TEAM_COUNTRY);
 		try {
 			ResponseEntity<Long> response = restTemplate.postForEntity(
@@ -186,7 +186,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private SquadResolution resolveSquad(Long teamId, Long playerId, String season, String dorsal) {
-		log.debug("Init method PlayerTeamServiceImpl.resolveSquad");
+		log.info("Init method PlayerTeamServiceImpl.resolveSquad");
 		Optional<PlayerTeam> existing = repository.findByIdTeamAndIdPlayerAndSeason(teamId, playerId, season);
 		if (existing.isPresent()) {
 			return new SquadResolution(existing.get().getId(), false);
@@ -203,7 +203,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private Map<String, Integer> readHeaders(Row headerRow, DataFormatter formatter, FormulaEvaluator evaluator) {
-		log.debug("Init method PlayerTeamServiceImpl.readHeaders");
+		log.info("Init method PlayerTeamServiceImpl.readHeaders");
 		Map<String, Integer> headers = new HashMap<>();
 		for (Cell cell : headerRow) {
 			headers.put(normalizeHeader(formatter.formatCellValue(cell, evaluator)), cell.getColumnIndex());
@@ -212,14 +212,14 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private int appendHeader(Row headerRow, String value) {
-		log.debug("Init method PlayerTeamServiceImpl.appendHeader");
+		log.info("Init method PlayerTeamServiceImpl.appendHeader");
 		int columnIndex = headerRow.getLastCellNum() >= 0 ? headerRow.getLastCellNum() : 0;
 		headerRow.createCell(columnIndex).setCellValue(value);
 		return columnIndex;
 	}
 
 	private boolean isRowEmpty(Row row, DataFormatter formatter, FormulaEvaluator evaluator) {
-		log.debug("Init method PlayerTeamServiceImpl.isRowEmpty");
+		log.info("Init method PlayerTeamServiceImpl.isRowEmpty");
 		for (Cell cell : row) {
 			if (!formatter.formatCellValue(cell, evaluator).trim().isEmpty()) {
 				return false;
@@ -230,7 +230,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 
 	private String readCell(Row row, Map<String, Integer> headers, DataFormatter formatter, FormulaEvaluator evaluator,
 			String headerName) {
-		log.debug("Init method PlayerTeamServiceImpl.readCell");
+		log.info("Init method PlayerTeamServiceImpl.readCell");
 		Integer index = headers.get(normalizeHeader(headerName));
 		if (index == null) {
 			return null;
@@ -249,7 +249,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private String normalizeBirthdate(String value) {
-		log.debug("Init method PlayerTeamServiceImpl.normalizeBirthdate");
+		log.info("Init method PlayerTeamServiceImpl.normalizeBirthdate");
 		String normalized = normalizeText(value);
 		if (normalized == null) {
 			return null;
@@ -267,7 +267,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private Date parseDate(String birthdate) {
-		log.debug("Init method PlayerTeamServiceImpl.parseDate");
+		log.info("Init method PlayerTeamServiceImpl.parseDate");
 		if (birthdate == null) {
 			return null;
 		}
@@ -276,7 +276,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private String mergeSurnames(String firstSurname, String secondSurname) {
-		log.debug("Init method PlayerTeamServiceImpl.mergeSurnames");
+		log.info("Init method PlayerTeamServiceImpl.mergeSurnames");
 		StringBuilder builder = new StringBuilder();
 		if (firstSurname != null) {
 			builder.append(firstSurname);
@@ -291,7 +291,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private String normalizeHeader(String value) {
-		log.debug("Init method PlayerTeamServiceImpl.normalizeHeader");
+		log.info("Init method PlayerTeamServiceImpl.normalizeHeader");
 		return Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFD)
 				.replaceAll("\\p{M}", "")
 				.toLowerCase(Locale.ROOT)
@@ -300,7 +300,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private String normalizeText(String value) {
-		log.debug("Init method PlayerTeamServiceImpl.normalizeText");
+		log.info("Init method PlayerTeamServiceImpl.normalizeText");
 		if (value == null) {
 			return null;
 		}
@@ -309,7 +309,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	}
 
 	private void saveLogFile(byte[] content) throws IOException {
-		log.debug("Init method PlayerTeamServiceImpl.saveLogFile");
+		log.info("Init method PlayerTeamServiceImpl.saveLogFile");
 		Path downloadsPath = Paths.get(System.getProperty("user.home"), "Downloads");
 		Files.createDirectories(downloadsPath);
 		Files.write(downloadsPath.resolve("log_registros.xlsx"), content);
