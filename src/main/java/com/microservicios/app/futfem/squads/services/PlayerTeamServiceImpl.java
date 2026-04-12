@@ -46,7 +46,6 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	private static final Logger log = LoggerFactory.getLogger(PlayerTeamServiceImpl.class);
 	private static final String PLAYERS_SERVICE_URL = "http://microservicio-futfem-players-temp";
 	private static final String TEAMS_SERVICE_URL = "http://microservicio-futfem-teams-temp";
-	private static final String DEFAULT_TEAM_COUNTRY = "ES";
 	private static final DateTimeFormatter INPUT_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 	private static final DateTimeFormatter ISO_DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
@@ -65,9 +64,10 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 
 	@Override
 	@Transactional
-	public byte[] exportPlayerTeam(MultipartFile excel, String season) throws IOException {
+	public byte[] importPlayerTeam(MultipartFile excel, String season, String country) throws IOException {
 		try (Workbook workbook = WorkbookFactory.create(excel.getInputStream());
 				ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+			String normalizedCountry = normalizeCountryCode(country);
 			Sheet sheet = workbook.getSheetAt(0);
 			DataFormatter formatter = new DataFormatter();
 			FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
@@ -85,7 +85,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 
 				ImportedRow importedRow = buildImportedRow(row, headers, formatter, evaluator);
 				PlayerResolution player = resolvePlayer(importedRow);
-				TeamResolution team = resolveTeam(importedRow);
+				TeamResolution team = resolveTeam(importedRow, normalizedCountry);
 				SquadResolution squad = resolveSquad(team.id(), player.id(), season, importedRow.dorsal());
 
 				row.createCell(playerColumn).setCellValue(player.message());
@@ -109,12 +109,13 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 		String firstSurname = readCell(row, headers, formatter, evaluator, "primer apellido");
 		String secondSurname = readCell(row, headers, formatter, evaluator, "segundo apellido");
 		String nickname = readCell(row, headers, formatter, evaluator, "apodo");
-		String country = readCell(row, headers, formatter, evaluator, "pais");
+		String country = readFirstAvailableCell(row, headers, formatter, evaluator, 4, "nacionalidad", "pais");
 		String birthdate = normalizeBirthdate(readCell(row, headers, formatter, evaluator, "fecha de nacimiento"));
 		if (birthdate == null) {
 			birthdate = normalizeBirthdate(readCell(row, headers, formatter, evaluator, "fecha nacimiento"));
 		}
-		String position = readCell(row, headers, formatter, evaluator, "posicion");
+		String position = normalizeImportedPosition(
+				readFirstAvailableCell(row, headers, formatter, evaluator, 8, "posicion", "posición"));
 
 		return new ImportedRow(club, dorsal, name, mergeSurnames(firstSurname, secondSurname), nickname, country,
 				birthdate, position);
@@ -123,7 +124,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 	private PlayerResolution resolvePlayer(ImportedRow importedRow) {
 		log.info("Init method PlayerTeamServiceImpl.resolvePlayer");
 		PlayerLookupRequest lookupRequest = new PlayerLookupRequest(importedRow.name(), importedRow.surname(),
-				importedRow.birthdate());
+				importedRow.nickname(), importedRow.birthdate());
 		try {
 			ResponseEntity<Long> response = restTemplate.postForEntity(
 					PLAYERS_SERVICE_URL + "/getIdByName",
@@ -139,7 +140,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 			playerPayload.setName(importedRow.name());
 			playerPayload.setSurname(importedRow.surname());
 			playerPayload.setNickname(importedRow.nickname());
-			playerPayload.setCountry(importedRow.country());
+			playerPayload.setCountry(normalizeCountryCode(importedRow.country()));
 			playerPayload.setPosition(importedRow.position());
 			playerPayload.setBirthdate(parseDate(importedRow.birthdate()));
 
@@ -155,9 +156,9 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 		}
 	}
 
-	private TeamResolution resolveTeam(ImportedRow importedRow) {
+	private TeamResolution resolveTeam(ImportedRow importedRow, String country) {
 		log.info("Init method PlayerTeamServiceImpl.resolveTeam");
-		TeamLookupRequest lookupRequest = new TeamLookupRequest(importedRow.club(), DEFAULT_TEAM_COUNTRY);
+		TeamLookupRequest lookupRequest = new TeamLookupRequest(importedRow.club(), country);
 		try {
 			ResponseEntity<Long> response = restTemplate.postForEntity(
 					TEAMS_SERVICE_URL + "/getIdByName",
@@ -171,7 +172,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 		} catch (HttpClientErrorException.NotFound ex) {
 			TeamPayload teamPayload = new TeamPayload();
 			teamPayload.setName(importedRow.club());
-			teamPayload.setCountry(DEFAULT_TEAM_COUNTRY);
+			teamPayload.setCountry(country);
 
 			ResponseEntity<TeamPayload> response = restTemplate.postForEntity(
 					TEAMS_SERVICE_URL + "/",
@@ -248,6 +249,32 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 		return normalizeText(formatter.formatCellValue(cell, evaluator));
 	}
 
+	private String readFirstAvailableCell(Row row, Map<String, Integer> headers, DataFormatter formatter,
+			FormulaEvaluator evaluator, int fallbackColumnIndex, String... headerNames) {
+		log.info("Init method PlayerTeamServiceImpl.readFirstAvailableCell");
+		for (String headerName : headerNames) {
+			String value = readCell(row, headers, formatter, evaluator, headerName);
+			if (value != null) {
+				return value;
+			}
+		}
+		return readCellByIndex(row, formatter, evaluator, fallbackColumnIndex);
+	}
+
+	private String readCellByIndex(Row row, DataFormatter formatter, FormulaEvaluator evaluator, int columnIndex) {
+		log.info("Init method PlayerTeamServiceImpl.readCellByIndex");
+		Cell cell = row.getCell(columnIndex);
+		if (cell == null) {
+			return null;
+		}
+
+		if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
+			return ISO_DATE_FORMATTER.format(cell.getLocalDateTimeCellValue().toLocalDate());
+		}
+
+		return normalizeText(formatter.formatCellValue(cell, evaluator));
+	}
+
 	private String normalizeBirthdate(String value) {
 		log.info("Init method PlayerTeamServiceImpl.normalizeBirthdate");
 		String normalized = normalizeText(value);
@@ -308,6 +335,32 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 		return normalized.isEmpty() ? null : normalized;
 	}
 
+	private String normalizeCountryCode(String value) {
+		log.info("Init method PlayerTeamServiceImpl.normalizeCountryCode");
+		String normalized = normalizeText(value);
+		return normalized == null ? null : normalized.toUpperCase(Locale.ROOT);
+	}
+
+	private String normalizeImportedPosition(String value) {
+		log.info("Init method PlayerTeamServiceImpl.normalizeImportedPosition");
+		String normalized = normalizeText(value);
+		if (normalized == null) {
+			return null;
+		}
+
+		String sanitized = Normalizer.normalize(normalized, Normalizer.Form.NFD)
+				.replaceAll("\\p{M}", "")
+				.toLowerCase(Locale.ROOT);
+
+		return switch (sanitized) {
+			case "centrocampista", "mediocampista", "medio", "mc" -> "MC";
+			case "defensa", "defensa central", "central", "dfc" -> "DFC";
+			case "delantera", "delantera centro", "fw", "dc" -> "FW";
+			case "portera", "portero", "guardameta", "gk" -> "GK";
+			default -> normalized.toUpperCase(Locale.ROOT);
+		};
+	}
+
 	private void saveLogFile(byte[] content) throws IOException {
 		log.info("Init method PlayerTeamServiceImpl.saveLogFile");
 		Path downloadsPath = Paths.get(System.getProperty("user.home"), "Downloads");
@@ -337,7 +390,7 @@ public class PlayerTeamServiceImpl extends CommonServiceImpl<PlayerTeam, PlayerT
 		}
 	}
 
-	private record PlayerLookupRequest(String name, String surname, String birthdate) {
+	private record PlayerLookupRequest(String name, String surname, String nickname, String birthdate) {
 	}
 
 	private record TeamLookupRequest(String name, String country) {

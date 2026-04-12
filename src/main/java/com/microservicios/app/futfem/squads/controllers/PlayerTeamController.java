@@ -30,14 +30,16 @@ public class PlayerTeamController extends CommonController<PlayerTeam, PlayerTea
 		return ResponseEntity.ok().body(service.findBySeason(season));
 	}
 
-	@PostMapping(value = "/exportPlayerTeam", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> exportPlayerTeam(@RequestParam("excel") MultipartFile excel,
-			@RequestParam("season") String season) throws IOException {
-		if (excel.isEmpty() || season == null || season.trim().isEmpty()) {
+	@PostMapping(value = "/importPlayerTeam", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<?> importPlayerTeam(@RequestParam("excel") MultipartFile excel,
+			@RequestParam("season") String season,
+			@RequestParam("country") String country) throws IOException {
+		if (excel.isEmpty() || season == null || season.trim().isEmpty()
+				|| country == null || country.trim().isEmpty()) {
 			return ResponseEntity.badRequest().build();
 		}
 
-		byte[] content = service.exportPlayerTeam(excel, season.trim());
+		byte[] content = service.importPlayerTeam(excel, season.trim(), country.trim());
 		ByteArrayResource resource = new ByteArrayResource(content);
 		return ResponseEntity.ok()
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=log_registros.xlsx")

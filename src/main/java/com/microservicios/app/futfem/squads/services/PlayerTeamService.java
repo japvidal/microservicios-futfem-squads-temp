@@ -14,5 +14,5 @@ public interface PlayerTeamService extends CommonService<PlayerTeam>{
 
 	public List<PlayerTeam> findBySeason(String season);
 
-	byte[] exportPlayerTeam(MultipartFile excel, String season) throws IOException;
+	byte[] importPlayerTeam(MultipartFile excel, String season, String country) throws IOException;
 }
